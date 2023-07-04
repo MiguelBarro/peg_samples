@@ -32,16 +32,16 @@ struct any_shift_op : sor<lshift_op, rshift_op> {};
 struct any_add_op : sor<add_op, sub_op> {};
 struct any_mult_op : sor<mult_op, div_op, mod_op> {};
 
-struct scoped_or_literal : pad<star<alnum>, ws> {};
+struct scoped_or_literal : pad<plus<alnum>, ws> {};
 struct const_expr; // forward declaration
 struct primary_expr : sor<seq<open_parentheses, const_expr, close_parentheses>, scoped_or_literal> {};
 struct unary_expr : sor<seq<unary_op, primary_expr>, primary_expr> {};
-struct mult_expr : sor<seq<unary_expr, any_mult_op, mult_expr>, unary_expr> {};
-struct add_expr : sor<seq<mult_expr, any_add_op, add_expr>, mult_expr> {};
-struct shift_expr : sor<seq<add_expr, any_shift_op, shift_expr>, add_expr> {};
-struct and_expr : sor<seq<shift_expr, and_op, and_expr>, shift_expr> {};
-struct xor_expr : sor<seq<and_expr, xor_op, xor_expr>, and_expr> {};
-struct const_expr : sor<seq<xor_expr, or_op, const_expr>, xor_expr> {};
+struct mult_expr : seq<unary_expr, opt<any_mult_op, mult_expr>> {};
+struct add_expr : seq<mult_expr, opt<any_add_op, add_expr>> {};
+struct shift_expr : seq<add_expr, opt<any_shift_op, shift_expr>> {};
+struct and_expr : seq<shift_expr, opt<and_op, and_expr>> {};
+struct xor_expr : seq<and_expr, opt<xor_op, xor_expr>> {};
+struct const_expr : seq<xor_expr, opt<or_op, const_expr>> {};
 
 using namespace std;
 
@@ -58,12 +58,20 @@ struct report_action
 
 int main (int argc, char *argv[])
 {
+    using my_grammar = const_expr;
+
+    std::size_t issues = tao::pegtl::analyze< my_grammar >(-1);
+    if (issues > 0)
+    {
+        issues = tao::pegtl::analyze< my_grammar >(1);
+    }
+
     // Let's try to build it
     if ( argc <= 1 )
         return -1;
 
     pegtl::argv_input in( argv, 1 );
-    if( pegtl::parse<const_expr, report_action>(in))
+    if( pegtl::parse<my_grammar, report_action>(in))
     {
         cout << "success!" << endl;
     }
