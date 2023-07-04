@@ -13,4 +13,5 @@ target_link_libraries(express PRIVATE taocpp::pegtl)
 enable_testing()
 include(CTest)
 
-add_test(NAME Hello COMMAND express)
+add_test(NAME Hello
+         COMMAND express "Hello")
