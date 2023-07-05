@@ -93,7 +93,7 @@ int main (int argc, char *argv[])
 
     pegtl::argv_input in( argv, 1);
 
-    if( pegtl::parse<my_grammar, report_action>(in, identified))
+    if( pegtl::parse<my_grammar, report_action>(in, identified) && in.empty())
     {
         cout << "parsing success!" << endl;
 
