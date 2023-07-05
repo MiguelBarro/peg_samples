@@ -13,16 +13,34 @@ namespace pegtl = TAO_PEGTL_NAMESPACE;
 using namespace pegtl;
 
 // literal grammar
+// integer literals
 struct dec_literal : seq<opt<one<'-'>>, plus<digit>> {};
-
-struct octal_digit : range<'0', '7'> {};
-struct oct_literal : seq<one<'0'>, plus<octal_digit>> {};
-
+struct oct_literal : seq<one<'0'>, plus<odigit>> {};
 struct hex_literal : seq<one<'0'>, one<'x','X'>, plus<xdigit>> {};
 
 struct integer_literal : sor< oct_literal,
                               hex_literal,
                               dec_literal> {};
+// char literals
+using singlequote = one<'\''>;
+using backslash = one<'\\'>;
+using escapable_char = sor<
+        singlequote,
+        one<'"'>,
+        one<'?'>,
+        backslash,
+        one<'a'>,
+        one<'b'>,
+        one<'f'>,
+        one<'n'>,
+        one<'r'>,
+        one<'t'>,
+        one<'v'>>;
+struct escape_sequence : seq<backslash, escapable_char> {};
+struct character_literal : seq<singlequote, sor<escape_sequence, any>, singlequote> {};
+
+struct literal : sor< integer_literal,
+                      character_literal> {};
 
 using namespace std;
 
@@ -78,9 +96,22 @@ struct report_action<hex_literal>
     }
 };
 
+template<>
+struct report_action<character_literal>
+{
+    template<typename Input>
+    static void apply(const Input& in, mystate& s)
+    {
+            using namespace std;
+            ++s["char"];
+            cout << "Rule: " << typeid(character_literal).name()
+                 << " " << in.string() << endl;
+    }
+};
+
 int main (int argc, char *argv[])
 {
-    using my_grammar = integer_literal;
+    using my_grammar = literal;
 
     std::size_t issues = tao::pegtl::analyze< my_grammar >(-1);
     if (issues > 0)

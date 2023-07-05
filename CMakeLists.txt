@@ -37,6 +37,7 @@ add_test(NAME expr.comp3 COMMAND express "Jaimita & ~(Pantuflo * ( Zipi + Zape )
 add_test(NAME expr.comp4 COMMAND express "(Jaimita | miguelita) & ~(Pantuflo * ( Zipi + Zape ))" 5)
 
 # literal testing
+## integer literals
 add_test(NAME literal.decimal.1 COMMAND literals "123456789" "decimal")
 add_test(NAME literal.decimal.2 COMMAND literals "102340567089" "decimal")
 add_test(NAME literal.octal.1 COMMAND literals "01234567" "octal")
@@ -59,3 +60,10 @@ set_tests_properties(
         literal.hexa.neg.1 
         literal.hexa.neg.2 
         PROPERTIES WILL_FAIL TRUE)
+
+## character literals
+add_test(NAME literal.char.1 COMMAND literals "'a'" "char") # a
+add_test(NAME literal.char.2 COMMAND literals "'A'" "char") # A
+add_test(NAME literal.char.3 COMMAND literals "'0'" "char") # 0
+add_test(NAME literal.char.4 COMMAND literals "'<'" "char") # <
+add_test(NAME literal.char.5 COMMAND literals [==['\'']==] "char") # \'
