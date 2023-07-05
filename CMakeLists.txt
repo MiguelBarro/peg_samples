@@ -67,6 +67,7 @@ add_test(NAME literal.char.2 COMMAND literals "'A'" "char") # A
 add_test(NAME literal.char.3 COMMAND literals "'0'" "char") # 0
 add_test(NAME literal.char.4 COMMAND literals "'<'" "char") # <
 add_test(NAME literal.char.5 COMMAND literals "' '" "char") # ' '
+add_test(NAME literal.char.6 COMMAND literals [==['"']==] "char") # ' '
 
 add_test(NAME literal.escape.1 COMMAND literals [==['\'']==] "escape") # \'
 add_test(NAME literal.escape.2 COMMAND literals [==['\"']==] "escape") # \"
@@ -94,7 +95,8 @@ add_test(NAME literal.escape.unicode.2 COMMAND literals [==['\u32A']==] "escaped
 add_test(NAME literal.escape.unicode.3 COMMAND literals [==['\u3F']==] "escaped_unicode") # unicode
 add_test(NAME literal.escape.unicode.4 COMMAND literals [==['\u3']==] "escaped_unicode") # unicode
 
-add_test(NAME literal.char.neg COMMAND literals "'abc'" "char") 
+add_test(NAME literal.char.neg.1 COMMAND literals "'abc'" "char") 
+add_test(NAME literal.char.neg.2 COMMAND literals "'''" "char") 
 add_test(NAME literal.escape.neg.1 COMMAND literals [==['\c']==] "escape") 
 add_test(NAME literal.escape.neg.2 COMMAND literals [==['\ca']==] "escape") 
 add_test(NAME literal.escape.octal.neg.1 COMMAND literals [==['\3241']==] "escaped_octal") 
@@ -104,7 +106,8 @@ add_test(NAME literal.escape.hexa.neg.2 COMMAND literals [==['\xG']==] "escaped_
 add_test(NAME literal.escape.unicode.neg.1 COMMAND literals [==['\uA232A']==] "escaped_unicode") 
 add_test(NAME literal.escape.unicode.neg.2 COMMAND literals [==['\uG']==] "escaped_unicode") 
 set_tests_properties(
-        literal.char.neg
+        literal.char.neg.1
+        literal.char.neg.2
         literal.escape.neg.1
         literal.escape.neg.2
         literal.escape.octal.neg.1
@@ -114,4 +117,61 @@ set_tests_properties(
         literal.escape.unicode.neg.1
         literal.escape.unicode.neg.2
         PROPERTIES WILL_FAIL TRUE)
+
+# no easy way to pass utf8 encoding as argument
+add_test(NAME literal.wchar COMMAND literals [==[L'a']==] "wchar")
+add_test(NAME literal.wchar.escape COMMAND literals [==[L'\'']==] "escape") # \'
+add_test(NAME literal.wchar.escape.octal COMMAND literals [==[L'\324']==] "escaped_octal") # octal
+add_test(NAME literal.wchar.escape.hexa COMMAND literals [==[L'\xA2']==] "escaped_hexa") # hexa
+add_test(NAME literal.wchar.escape.unicode COMMAND literals [==[L'\u3240']==] "escaped_unicode") # unicode
+
+## string literals
+add_test(NAME literal.string.1 COMMAND literals [==["hello world"]==] "string")
+add_test(NAME literal.string.2 COMMAND literals [==["hello" "world"]==] "string")
+add_test(NAME literal.string.3 COMMAND literals [==["hello\nworld"]==] "string")
+add_test(NAME literal.string.4 COMMAND literals [==["hello 'world'"]==] "string")
+add_test(NAME literal.wstring.1 COMMAND literals [==[L"hello world"]==] "wstring")
+add_test(NAME literal.wstring.2 COMMAND literals [==[L"hello" L"world"]==] "wstring")
+add_test(NAME literal.wstring.3 COMMAND literals [==[L"hello\nworld"]==] "wstring")
+add_test(NAME literal.wstring.4 COMMAND literals [==[L"hello 'world'"]==] "wstring")
+
+add_test(NAME literal.string.neg.1 COMMAND literals [==["""]==] "string")
+add_test(NAME literal.string.neg.2 COMMAND literals [==["hello" L"world"]==] "string")
+add_test(NAME literal.wstring.neg.1 COMMAND literals [==[L"""]==] "string")
+add_test(NAME literal.wstring.neg.2 COMMAND literals [==[L"hello" "world"]==] "string")
+set_tests_properties(
+        literal.string.neg.1
+        literal.string.neg.2
+        literal.wstring.neg.1
+        literal.wstring.neg.2
+        PROPERTIES WILL_FAIL TRUE)
+
+## float literals
+add_test(NAME literal.float.1 COMMAND literals "12.3456e13" "float")
+add_test(NAME literal.float.2 COMMAND literals "12.e13" "float")
+add_test(NAME literal.float.3 COMMAND literals "12e13" "float")
+add_test(NAME literal.float.4 COMMAND literals ".1e13" "float")
+add_test(NAME literal.float.5 COMMAND literals "-12.3456e13" "float")
+add_test(NAME literal.float.6 COMMAND literals "-12.e-13" "float")
+add_test(NAME literal.float.7 COMMAND literals "-12e-13" "float")
+
+add_test(NAME literal.float.neg.1 COMMAND literals "12.3456e13" "decimal")
+add_test(NAME literal.float.neg.2 COMMAND literals "+12.3456e13" "float")
+add_test(NAME literal.float.neg.3 COMMAND literals "12.3456e+13" "float")
+add_test(NAME literal.float.neg.4 COMMAND literals "12.a4A6e13" "float")
+add_test(NAME literal.float.neg.5 COMMAND literals ".e13" "float")
+add_test(NAME literal.float.neg.6 COMMAND literals "0.e13" "float")
+add_test(NAME literal.float.neg.7 COMMAND literals ".000e13" "float")
+add_test(NAME literal.float.neg.8 COMMAND literals "00.00e13" "float")
+set_tests_properties(
+        literal.float.neg.1
+        literal.float.neg.2
+        literal.float.neg.3
+        literal.float.neg.4
+        literal.float.neg.5
+        literal.float.neg.6
+        literal.float.neg.7
+        literal.float.neg.8
+        PROPERTIES WILL_FAIL TRUE)
+
 

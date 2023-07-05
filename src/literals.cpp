@@ -12,17 +12,35 @@ namespace pegtl = TAO_PEGTL_NAMESPACE;
 
 using namespace pegtl;
 
-// literal grammar
+/* literal grammar */
+
 // integer literals
-struct dec_literal : seq<opt<one<'-'>>, plus<digit>> {};
+struct float_literal; // float literals start with and integer one, disambiguation is required
+struct dec_literal : seq<not_at<float_literal>, opt<one<'-'>>, plus<digit>> {};
 struct oct_literal : seq<one<'0'>, plus<odigit>> {};
 struct hex_literal : seq<one<'0'>, one<'x','X'>, plus<xdigit>> {};
 
 struct integer_literal : sor< oct_literal,
                               hex_literal,
                               dec_literal> {};
+
+// float literals
+using zero = one<'0'>;
+using dot = one<'.'>;
+using kw_exp = one<'e', 'E'>;
+struct decimal_exponent : seq<kw_exp, opt<one<'-'>>, plus<digit>> {};
+struct float_literal : seq< opt<one<'-'>>,
+                            not_at<seq<star<zero>, dot, star<zero>, kw_exp>>,
+                            star<digit>,
+                            opt<seq<dot, star<digit>>>,
+                            decimal_exponent> {};
+
+// fixed-point literals
+// struct fixed_pt_literal : seq<
+
 // char literals
 using singlequote = one<'\''>;
+using doublequote = one<'"'>;
 using backslash = one<'\\'>;
 using escapable_char = sor<
         singlequote,
@@ -44,11 +62,28 @@ struct escape_sequence : sor<
         escaped_unicode,
         escaped_hexa,
         escaped_octal> {};
-struct character : sor<escape_sequence, any> {};
+struct character : sor<escape_sequence, seq<not_at<singlequote>, any>> {};
 struct character_literal : seq<singlequote, character, singlequote> {};
 
+struct wide_character : sor<escape_sequence, seq<not_at<singlequote>, utf8::any>> {};
+struct wide_character_literal : seq<one<'L'>, singlequote, wide_character, singlequote> {};
+
+// string literals
+struct string_character : sor<escape_sequence, seq<not_at<doublequote>, any>> {};
+struct substring_literal : seq<doublequote, star<string_character>, doublequote> {};
+struct string_literal : seq<substring_literal, star<seq<space, substring_literal>>> {};
+
+// wstring literals
+struct wstring_character : sor<escape_sequence, seq<not_at<doublequote>, utf8::any>> {};
+struct wide_substring_literal : seq<one<'L'>, doublequote, star<wstring_character>, doublequote> {};
+struct wide_string_literal : seq<wide_substring_literal, star<seq<space, wide_substring_literal>>> {};
+
 struct literal : sor< integer_literal,
-                      character_literal> {};
+                      float_literal,
+                      character_literal,
+                      wide_character_literal,
+                      string_literal,
+                      wide_string_literal> {};
 
 using namespace std;
 
@@ -65,109 +100,32 @@ struct report_action
     }
 };
 
-template<>
-struct report_action<dec_literal>
-{
-    template<typename Input>
-    static void apply(const Input& in, mystate& s)
-    {
-            using namespace std;
-            ++s["decimal"];
-            cout << "Rule: " << typeid(dec_literal).name()
-                 << " " << in.string() << endl;
-    }
+#define repor_specialization(Rule, id) \
+template<> \
+struct report_action<Rule> \
+{ \
+    template<typename Input> \
+    static void apply(const Input& in, mystate& s) \
+    { \
+            using namespace std; \
+            ++s[#id]; \
+            cout << "Rule: " << typeid(Rule).name() \
+                 << " " << in.string() << endl; \
+    } \
 };
 
-template<>
-struct report_action<oct_literal>
-{
-    template<typename Input>
-    static void apply(const Input& in, mystate& s)
-    {
-            using namespace std;
-            ++s["octal"];
-            cout << "Rule: " << typeid(oct_literal).name()
-                 << " " << in.string() << endl;
-    }
-};
-
-template<>
-struct report_action<hex_literal>
-{
-    template<typename Input>
-    static void apply(const Input& in, mystate& s)
-    {
-            using namespace std;
-            ++s["hexa"];
-            cout << "Rule: " << typeid(hex_literal).name()
-                 << " " << in.string() << endl;
-    }
-};
-
-template<>
-struct report_action<character_literal>
-{
-    template<typename Input>
-    static void apply(const Input& in, mystate& s)
-    {
-            using namespace std;
-            ++s["char"];
-            cout << "Rule: " << typeid(character_literal).name()
-                 << " " << in.string() << endl;
-    }
-};
-
-template<>
-struct report_action<escape_sequence>
-{
-    template<typename Input>
-    static void apply(const Input& in, mystate& s)
-    {
-            using namespace std;
-            ++s["escape"];
-            cout << "Rule: " << typeid(escape_sequence).name()
-                 << " " << in.string() << endl;
-    }
-};
-
-template<>
-struct report_action<escaped_octal>
-{
-    template<typename Input>
-    static void apply(const Input& in, mystate& s)
-    {
-            using namespace std;
-            ++s["escaped_octal"];
-            cout << "Rule: " << typeid(escaped_octal).name()
-                 << " " << in.string() << endl;
-    }
-};
-
-template<>
-struct report_action<escaped_hexa>
-{
-    template<typename Input>
-    static void apply(const Input& in, mystate& s)
-    {
-            using namespace std;
-            ++s["escaped_hexa"];
-            cout << "Rule: " << typeid(escaped_hexa).name()
-                 << " " << in.string() << endl;
-    }
-};
-
-template<>
-struct report_action<escaped_unicode>
-{
-    template<typename Input>
-    static void apply(const Input& in, mystate& s)
-    {
-            using namespace std;
-            ++s["escaped_unicode"];
-            cout << "Rule: " << typeid(escaped_hexa).name()
-                 << " " << in.string() << endl;
-    }
-};
+repor_specialization(dec_literal, decimal)
+repor_specialization(oct_literal, octal)
+repor_specialization(hex_literal, hexa)
+repor_specialization(character_literal, char)
+repor_specialization(wide_character_literal, wchar)
+repor_specialization(escape_sequence, escape)
+repor_specialization(escaped_octal, escaped_octal)
+repor_specialization(escaped_hexa, escaped_hexa)
+repor_specialization(escaped_unicode, escaped_unicode)
+repor_specialization(string_literal, string)
+repor_specialization(wide_string_literal, wstring)
+repor_specialization(float_literal, float)
 
 int main (int argc, char *argv[])
 {
