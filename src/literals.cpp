@@ -36,8 +36,16 @@ using escapable_char = sor<
         one<'r'>,
         one<'t'>,
         one<'v'>>;
-struct escape_sequence : seq<backslash, escapable_char> {};
-struct character_literal : seq<singlequote, sor<escape_sequence, any>, singlequote> {};
+struct escaped_octal : seq<backslash, rep_max<3,odigit>> {};
+struct escaped_hexa : seq<backslash, one<'x'>, rep_max<2,xdigit>> {};
+struct escaped_unicode : seq<backslash, one<'u'>, rep_max<4,xdigit>> {};
+struct escape_sequence : sor<
+        seq<backslash, escapable_char>,
+        escaped_unicode,
+        escaped_hexa,
+        escaped_octal> {};
+struct character : sor<escape_sequence, any> {};
+struct character_literal : seq<singlequote, character, singlequote> {};
 
 struct literal : sor< integer_literal,
                       character_literal> {};
@@ -105,6 +113,58 @@ struct report_action<character_literal>
             using namespace std;
             ++s["char"];
             cout << "Rule: " << typeid(character_literal).name()
+                 << " " << in.string() << endl;
+    }
+};
+
+template<>
+struct report_action<escape_sequence>
+{
+    template<typename Input>
+    static void apply(const Input& in, mystate& s)
+    {
+            using namespace std;
+            ++s["escape"];
+            cout << "Rule: " << typeid(escape_sequence).name()
+                 << " " << in.string() << endl;
+    }
+};
+
+template<>
+struct report_action<escaped_octal>
+{
+    template<typename Input>
+    static void apply(const Input& in, mystate& s)
+    {
+            using namespace std;
+            ++s["escaped_octal"];
+            cout << "Rule: " << typeid(escaped_octal).name()
+                 << " " << in.string() << endl;
+    }
+};
+
+template<>
+struct report_action<escaped_hexa>
+{
+    template<typename Input>
+    static void apply(const Input& in, mystate& s)
+    {
+            using namespace std;
+            ++s["escaped_hexa"];
+            cout << "Rule: " << typeid(escaped_hexa).name()
+                 << " " << in.string() << endl;
+    }
+};
+
+template<>
+struct report_action<escaped_unicode>
+{
+    template<typename Input>
+    static void apply(const Input& in, mystate& s)
+    {
+            using namespace std;
+            ++s["escaped_unicode"];
+            cout << "Rule: " << typeid(escaped_hexa).name()
                  << " " << in.string() << endl;
     }
 };

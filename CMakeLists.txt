@@ -66,4 +66,52 @@ add_test(NAME literal.char.1 COMMAND literals "'a'" "char") # a
 add_test(NAME literal.char.2 COMMAND literals "'A'" "char") # A
 add_test(NAME literal.char.3 COMMAND literals "'0'" "char") # 0
 add_test(NAME literal.char.4 COMMAND literals "'<'" "char") # <
-add_test(NAME literal.char.5 COMMAND literals [==['\'']==] "char") # \'
+add_test(NAME literal.char.5 COMMAND literals "' '" "char") # ' '
+
+add_test(NAME literal.escape.1 COMMAND literals [==['\'']==] "escape") # \'
+add_test(NAME literal.escape.2 COMMAND literals [==['\"']==] "escape") # \"
+add_test(NAME literal.escape.3 COMMAND literals [==['\?']==] "escape") # ?
+add_test(NAME literal.escape.4 COMMAND literals [==['\\']==] "escape") # \
+add_test(NAME literal.escape.5 COMMAND literals [==['\'']==] "escape") # \'
+add_test(NAME literal.escape.6 COMMAND literals [==['\b']==] "escape") # \b
+add_test(NAME literal.escape.7 COMMAND literals [==['\a']==] "escape") # \a
+add_test(NAME literal.escape.8 COMMAND literals [==['\f']==] "escape") # \f
+add_test(NAME literal.escape.9 COMMAND literals [==['\r']==] "escape") # \r
+add_test(NAME literal.escape.10 COMMAND literals [==['\b']==] "escape") # \b
+add_test(NAME literal.escape.11 COMMAND literals [==['\v']==] "escape") # \v
+add_test(NAME literal.escape.12 COMMAND literals [==['\t']==] "escape") # \t
+add_test(NAME literal.escape.13 COMMAND literals [==['\n']==] "escape") # \n
+
+add_test(NAME literal.escape.octal.1 COMMAND literals [==['\324']==] "escaped_octal") # octal
+add_test(NAME literal.escape.octal.2 COMMAND literals [==['\32']==] "escaped_octal") # octal
+add_test(NAME literal.escape.octal.3 COMMAND literals [==['\3']==] "escaped_octal") # octal
+
+add_test(NAME literal.escape.hexa.1 COMMAND literals [==['\xA2']==] "escaped_hexa") # hexa
+add_test(NAME literal.escape.hexa.2 COMMAND literals [==['\xF']==] "escaped_hexa") # hexa
+
+add_test(NAME literal.escape.unicode.1 COMMAND literals [==['\u3240']==] "escaped_unicode") # unicode
+add_test(NAME literal.escape.unicode.2 COMMAND literals [==['\u32A']==] "escaped_unicode") # unicode
+add_test(NAME literal.escape.unicode.3 COMMAND literals [==['\u3F']==] "escaped_unicode") # unicode
+add_test(NAME literal.escape.unicode.4 COMMAND literals [==['\u3']==] "escaped_unicode") # unicode
+
+add_test(NAME literal.char.neg COMMAND literals "'abc'" "char") 
+add_test(NAME literal.escape.neg.1 COMMAND literals [==['\c']==] "escape") 
+add_test(NAME literal.escape.neg.2 COMMAND literals [==['\ca']==] "escape") 
+add_test(NAME literal.escape.octal.neg.1 COMMAND literals [==['\3241']==] "escaped_octal") 
+add_test(NAME literal.escape.octal.neg.2 COMMAND literals [==['\A']==] "escaped_octal") 
+add_test(NAME literal.escape.hexa.neg.1 COMMAND literals [==['\xA232']==] "escaped_hexa") 
+add_test(NAME literal.escape.hexa.neg.2 COMMAND literals [==['\xG']==] "escaped_hexa") 
+add_test(NAME literal.escape.unicode.neg.1 COMMAND literals [==['\uA232A']==] "escaped_unicode") 
+add_test(NAME literal.escape.unicode.neg.2 COMMAND literals [==['\uG']==] "escaped_unicode") 
+set_tests_properties(
+        literal.char.neg
+        literal.escape.neg.1
+        literal.escape.neg.2
+        literal.escape.octal.neg.1
+        literal.escape.octal.neg.2
+        literal.escape.hexa.neg.1
+        literal.escape.hexa.neg.2
+        literal.escape.unicode.neg.1
+        literal.escape.unicode.neg.2
+        PROPERTIES WILL_FAIL TRUE)
+
