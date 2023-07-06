@@ -24,7 +24,7 @@ struct report_action
     }
 };
 
-#define repor_specialization(Rule, id) \
+#define report_specialization(Rule, id) \
 template<> \
 struct report_action<Rule> \
 { \
@@ -38,20 +38,20 @@ struct report_action<Rule> \
     } \
 };
 
-repor_specialization(dec_literal, decimal)
-repor_specialization(oct_literal, octal)
-repor_specialization(hex_literal, hexa)
-repor_specialization(character_literal, char)
-repor_specialization(wide_character_literal, wchar)
-repor_specialization(escape_sequence, escape)
-repor_specialization(escaped_octal, escaped_octal)
-repor_specialization(escaped_hexa, escaped_hexa)
-repor_specialization(escaped_unicode, escaped_unicode)
-repor_specialization(string_literal, string)
-repor_specialization(wide_string_literal, wstring)
-repor_specialization(float_literal, float)
-repor_specialization(fixed_pt_literal, fixed)
-repor_specialization(boolean_literal, bool)
+report_specialization(dec_literal, decimal)
+report_specialization(oct_literal, octal)
+report_specialization(hex_literal, hexa)
+report_specialization(character_literal, char)
+report_specialization(wide_character_literal, wchar)
+report_specialization(escape_sequence, escape)
+report_specialization(escaped_octal, escaped_octal)
+report_specialization(escaped_hexa, escaped_hexa)
+report_specialization(escaped_unicode, escaped_unicode)
+report_specialization(string_literal, string)
+report_specialization(wide_string_literal, wstring)
+report_specialization(float_literal, float)
+report_specialization(fixed_pt_literal, fixed)
+report_specialization(boolean_literal, bool)
 
 int main (int argc, char *argv[])
 {

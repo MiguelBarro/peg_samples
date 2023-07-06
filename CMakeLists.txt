@@ -16,6 +16,10 @@ target_link_libraries(express PRIVATE taocpp::pegtl grammar)
 add_executable(literals ${CMAKE_CURRENT_LIST_DIR}/src/literals.cpp)
 target_link_libraries(literals PRIVATE taocpp::pegtl grammar)
 
+add_executable(calculator ${CMAKE_CURRENT_LIST_DIR}/src/calc.cpp)
+target_compile_features(calculator PRIVATE cxx_std_17)
+target_link_libraries(calculator PRIVATE taocpp::pegtl grammar)
+
 enable_testing()
 include(CTest)
 
@@ -174,6 +178,7 @@ set_tests_properties(
         literal.float.neg.5
         PROPERTIES WILL_FAIL TRUE)
 
+## fixed point literals
 add_test(NAME literal.fixed.1 COMMAND literals "1234567890123456D" "fixed")
 add_test(NAME literal.fixed.2 COMMAND literals "-123456789.123456D" "fixed")
 add_test(NAME literal.fixed.3 COMMAND literals "12345678.d" "fixed")
@@ -196,6 +201,7 @@ set_tests_properties(
         literal.fixed.neg.5
         PROPERTIES WILL_FAIL TRUE)
 
+## boolean literals
 add_test(NAME literal.bool.1 COMMAND literals "TRUE" "bool")
 add_test(NAME literal.bool.2 COMMAND literals "FALSE" "bool")
 add_test(NAME literal.bool.neg.1 COMMAND literals "true" "bool")
@@ -208,3 +214,18 @@ set_tests_properties(
         literal.bool.neg.3
         literal.bool.neg.4
         PROPERTIES WILL_FAIL TRUE)
+
+#expression evaluation
+add_test(NAME calc.id COMMAND calculator "1" "decimal" 1)
+add_test(NAME calc.brackets COMMAND calculator "(1)" "decimal" 1)
+add_test(NAME calc.inf COMMAND calculator "~1" "decimal;inv" 11111111111111111111111111111110)
+add_test(NAME calc.neg COMMAND calculator "-1" "decimal;minus" -1)
+add_test(NAME calc.plus COMMAND calculator "01 + 1" "octal;decimal;add" 2)
+add_test(NAME calc.minus COMMAND calculator "0x3 - 1" "hexa;decimal;sub" 2)
+add_test(NAME calc.times COMMAND calculator "1 * 0x2" "decimal;hexa;mult" 2)
+add_test(NAME calc.div COMMAND calculator "4 / 02" "decimal;octal;div" 2)
+add_test(NAME calc.mod COMMAND calculator "2 % 3" "decimal;decimal;mod" 2)
+add_test(NAME calc.and COMMAND calculator "0X3 & 2" "hexa;decimal;and" 2)
+add_test(NAME calc.or COMMAND calculator "1 | 1" "decimal;decimal;or" 1)
+add_test(NAME calc.lshift COMMAND calculator "1 << 1" "decimal;decimal;<<" 2)
+add_test(NAME calc.rshift COMMAND calculator "0x4 >> 1" "hexa;decimal;>>" 2)

@@ -111,19 +111,42 @@ struct mult_op : pad<one<'*'>, ws> {};
 struct div_op : pad<one<'/'>, ws> {};
 struct mod_op : pad<one<'%'>, ws> {};
 struct neg_op : pad<one<'~'>, ws> {};
-struct unary_op : sor<sub_op, add_op, neg_op> {};
-
-struct any_shift_op : sor<lshift_op, rshift_op> {};
-struct any_add_op : sor<add_op, sub_op> {};
-struct any_mult_op : sor<mult_op, div_op, mod_op> {};
 
 struct scoped_or_literal : sor<literal, plus<alnum>> {}; // for now
 struct const_expr; // forward declaration
 struct primary_expr : sor<seq<open_parentheses, const_expr, close_parentheses>, scoped_or_literal> {};
-struct unary_expr : sor<seq<unary_op, primary_expr>, primary_expr> {};
-struct mult_expr : seq<unary_expr, opt<any_mult_op, mult_expr>> {};
-struct add_expr : seq<mult_expr, opt<any_add_op, add_expr>> {};
-struct shift_expr : seq<add_expr, opt<any_shift_op, shift_expr>> {};
-struct and_expr : seq<shift_expr, opt<and_op, and_expr>> {};
-struct xor_expr : seq<and_expr, opt<xor_op, xor_expr>> {};
-struct const_expr : seq<xor_expr, opt<or_op, const_expr>> {};
+
+struct inv_exec : seq<neg_op, primary_expr> {};
+struct plus_exec : seq<add_op, primary_expr> {};
+struct minus_exec : seq<sub_op, primary_expr> {};
+struct unary_expr : sor<inv_exec,
+                        plus_exec,
+                        minus_exec,
+                        primary_expr> {};
+
+struct mult_expr;
+struct mod_exec : seq<mod_op, mult_expr> {};
+struct div_exec : seq<div_op, mult_expr> {};
+struct mult_exec : seq<mult_op, mult_expr> {};
+struct mult_expr : seq<unary_expr, opt<sor<mod_exec, div_exec, mult_exec>>> {};
+
+struct add_expr;
+struct sub_exec : seq<sub_op, add_expr> {};
+struct add_exec : seq<add_op, add_expr> {};
+struct add_expr : seq<mult_expr, opt<sor<sub_exec, add_exec>>> {};
+
+struct shift_expr;
+struct lshift_exec : seq<lshift_op, shift_expr> {};
+struct rshift_exec : seq<rshift_op, shift_expr> {};
+struct shift_expr : seq<add_expr, opt<sor<lshift_exec, rshift_exec>>> {};
+
+struct and_expr;
+struct and_exec : seq<and_op, and_expr> {};
+struct and_expr : seq<shift_expr, opt<and_exec>> {};
+
+struct xor_expr;
+struct xor_exec : seq<xor_op, xor_expr> {};
+struct xor_expr : seq<and_expr, opt<xor_exec>> {};
+
+struct or_exec : seq<or_op, const_expr> {};
+struct const_expr : seq<xor_expr, opt<or_exec>> {};
