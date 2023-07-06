@@ -154,24 +154,41 @@ add_test(NAME literal.float.4 COMMAND literals ".1e13" "float")
 add_test(NAME literal.float.5 COMMAND literals "-12.3456e13" "float")
 add_test(NAME literal.float.6 COMMAND literals "-12.e-13" "float")
 add_test(NAME literal.float.7 COMMAND literals "-12e-13" "float")
+add_test(NAME literal.float.8 COMMAND literals "0.e13" "float")
+add_test(NAME literal.float.9 COMMAND literals ".000e13" "float")
+add_test(NAME literal.float.10 COMMAND literals "00.00e13" "float")
 
 add_test(NAME literal.float.neg.1 COMMAND literals "12.3456e13" "decimal")
 add_test(NAME literal.float.neg.2 COMMAND literals "+12.3456e13" "float")
 add_test(NAME literal.float.neg.3 COMMAND literals "12.3456e+13" "float")
 add_test(NAME literal.float.neg.4 COMMAND literals "12.a4A6e13" "float")
 add_test(NAME literal.float.neg.5 COMMAND literals ".e13" "float")
-add_test(NAME literal.float.neg.6 COMMAND literals "0.e13" "float")
-add_test(NAME literal.float.neg.7 COMMAND literals ".000e13" "float")
-add_test(NAME literal.float.neg.8 COMMAND literals "00.00e13" "float")
 set_tests_properties(
         literal.float.neg.1
         literal.float.neg.2
         literal.float.neg.3
         literal.float.neg.4
         literal.float.neg.5
-        literal.float.neg.6
-        literal.float.neg.7
-        literal.float.neg.8
         PROPERTIES WILL_FAIL TRUE)
 
+add_test(NAME literal.fixed.1 COMMAND literals "1234567890123456D" "fixed")
+add_test(NAME literal.fixed.2 COMMAND literals "-123456789.123456D" "fixed")
+add_test(NAME literal.fixed.3 COMMAND literals "12345678.d" "fixed")
+add_test(NAME literal.fixed.4 COMMAND literals "-.1234567890d" "fixed")
+add_test(NAME literal.fixed.5 COMMAND literals "12345.99d" "fixed")
+add_test(NAME literal.fixed.6 COMMAND literals "-000123.990d" "fixed")
+add_test(NAME literal.fixed.7 COMMAND literals "0.00D" "fixed")
+add_test(NAME literal.fixed.8 COMMAND literals "-0.00D" "fixed")
 
+add_test(NAME literal.fixed.neg.1 COMMAND literals "1234567890123456D" "decimal")
+add_test(NAME literal.fixed.neg.2 COMMAND literals "+1234567890123456D" "fixed")
+add_test(NAME literal.fixed.neg.3 COMMAND literals "123456A8F0C23456D" "fixed")
+add_test(NAME literal.fixed.neg.4 COMMAND literals "0123456789D" "octal")
+add_test(NAME literal.fixed.neg.5 COMMAND literals ".D" "fixed")
+set_tests_properties(
+        literal.fixed.neg.1
+        literal.fixed.neg.2
+        literal.fixed.neg.3
+        literal.fixed.neg.4
+        literal.fixed.neg.5
+        PROPERTIES WILL_FAIL TRUE)

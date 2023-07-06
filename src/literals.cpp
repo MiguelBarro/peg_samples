@@ -15,28 +15,37 @@ using namespace pegtl;
 /* literal grammar */
 
 // integer literals
-struct float_literal; // float literals start with and integer one, disambiguation is required
-struct dec_literal : seq<not_at<float_literal>, opt<one<'-'>>, plus<digit>> {};
+struct dec_literal : seq<opt<one<'-'>>, plus<digit>> {};
 struct oct_literal : seq<one<'0'>, plus<odigit>> {};
 struct hex_literal : seq<one<'0'>, one<'x','X'>, plus<xdigit>> {};
 
-struct integer_literal : sor< oct_literal,
-                              hex_literal,
-                              dec_literal> {};
+struct float_literal; // float literals start with and integer one, disambiguation is required
+struct fixed_pt_literal; // fixed-point literals start with and integer one, disambiguation is required
+struct integer_literal : seq<not_at<float_literal>,
+                             not_at<fixed_pt_literal>,
+                             sor<oct_literal,
+                                 hex_literal,
+                                 dec_literal>> {};
 
 // float literals
 using zero = one<'0'>;
 using dot = one<'.'>;
 using kw_exp = one<'e', 'E'>;
 struct decimal_exponent : seq<kw_exp, opt<one<'-'>>, plus<digit>> {};
-struct float_literal : seq< opt<one<'-'>>,
-                            not_at<seq<star<zero>, dot, star<zero>, kw_exp>>,
+struct float_literal : seq< not_at<fixed_pt_literal>,
+                            opt<one<'-'>>,
+                            not_at<seq<dot, kw_exp>>,
                             star<digit>,
                             opt<seq<dot, star<digit>>>,
                             decimal_exponent> {};
 
 // fixed-point literals
-// struct fixed_pt_literal : seq<
+using kw_fixed = one<'d', 'D'>;
+struct fixed_pt_literal : seq< opt<one<'-'>>,
+                               not_at<seq<dot, kw_fixed>>,
+                               star<digit>,
+                               opt< seq<dot, star<digit>>>,
+                               kw_fixed> {};
 
 // char literals
 using singlequote = one<'\''>;
@@ -80,6 +89,7 @@ struct wide_string_literal : seq<wide_substring_literal, star<seq<space, wide_su
 
 struct literal : sor< integer_literal,
                       float_literal,
+                      fixed_pt_literal,
                       character_literal,
                       wide_character_literal,
                       string_literal,
@@ -126,6 +136,7 @@ repor_specialization(escaped_unicode, escaped_unicode)
 repor_specialization(string_literal, string)
 repor_specialization(wide_string_literal, wstring)
 repor_specialization(float_literal, float)
+repor_specialization(fixed_pt_literal, fixed)
 
 int main (int argc, char *argv[])
 {
