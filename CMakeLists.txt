@@ -7,11 +7,14 @@ project(idl-grammar VERSION 1.0.0
 
 find_package(pegtl 4 REQUIRED CONFIG PATHS /temp/install/tao)
 
+add_library(grammar INTERFACE)
+target_include_directories(grammar INTERFACE ${CMAKE_CURRENT_LIST_DIR}/include)
+
 add_executable(express ${CMAKE_CURRENT_LIST_DIR}/src/express.cpp)
-target_link_libraries(express PRIVATE taocpp::pegtl)
+target_link_libraries(express PRIVATE taocpp::pegtl grammar)
 
 add_executable(literals ${CMAKE_CURRENT_LIST_DIR}/src/literals.cpp)
-target_link_libraries(literals PRIVATE taocpp::pegtl)
+target_link_libraries(literals PRIVATE taocpp::pegtl grammar)
 
 enable_testing()
 include(CTest)
