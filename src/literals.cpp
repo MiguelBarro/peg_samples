@@ -14,6 +14,9 @@ using namespace pegtl;
 
 /* literal grammar */
 
+// boolean literal
+struct boolean_literal : sor<TAO_PEGTL_STRING("TRUE"), TAO_PEGTL_STRING("FALSE")> {};
+
 // integer literals
 struct dec_literal : seq<opt<one<'-'>>, plus<digit>> {};
 struct oct_literal : seq<one<'0'>, plus<odigit>> {};
@@ -87,7 +90,8 @@ struct wstring_character : sor<escape_sequence, seq<not_at<doublequote>, utf8::a
 struct wide_substring_literal : seq<one<'L'>, doublequote, star<wstring_character>, doublequote> {};
 struct wide_string_literal : seq<wide_substring_literal, star<seq<space, wide_substring_literal>>> {};
 
-struct literal : sor< integer_literal,
+struct literal : sor< boolean_literal,
+                      integer_literal,
                       float_literal,
                       fixed_pt_literal,
                       character_literal,
@@ -137,6 +141,7 @@ repor_specialization(string_literal, string)
 repor_specialization(wide_string_literal, wstring)
 repor_specialization(float_literal, float)
 repor_specialization(fixed_pt_literal, fixed)
+repor_specialization(boolean_literal, bool)
 
 int main (int argc, char *argv[])
 {

@@ -192,3 +192,16 @@ set_tests_properties(
         literal.fixed.neg.4
         literal.fixed.neg.5
         PROPERTIES WILL_FAIL TRUE)
+
+add_test(NAME literal.bool.1 COMMAND literals "TRUE" "bool")
+add_test(NAME literal.bool.2 COMMAND literals "FALSE" "bool")
+add_test(NAME literal.bool.neg.1 COMMAND literals "true" "bool")
+add_test(NAME literal.bool.neg.2 COMMAND literals "false" "bool")
+add_test(NAME literal.bool.neg.3 COMMAND literals "True" "bool")
+add_test(NAME literal.bool.neg.4 COMMAND literals "False" "bool")
+set_tests_properties(
+        literal.bool.neg.1
+        literal.bool.neg.2
+        literal.bool.neg.3
+        literal.bool.neg.4
+        PROPERTIES WILL_FAIL TRUE)
