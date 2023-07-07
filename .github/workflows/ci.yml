@@ -1,0 +1,49 @@
+name: idl pegtl grammar ci
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - '**'
+
+defaults:
+    run:
+        shell: pwsh
+
+jobs:
+  windows-CI:
+    runs-on: windows-latest
+
+    steps:
+      - name: deploy the idl grammar
+        uses: actions/checkout@v3
+        with:
+          path: peg-idl
+
+      - name: deploy peg library
+        uses: actions/checkout@v3
+        with:
+          repository: taocpp/PEGTL
+          ref: main
+          path: tao-pegtl
+
+      - name: install peg library
+        run: |
+             mkdir /temp
+             cmake -DCMAKE_INSTALL_PREFIX=/tao `
+                   -DPEGTL_BUILD_TESTS=OFF `
+                   -DPEGTL_BUILD_EXAMPLES=OFF -B /temp/taobuild tao-pegtl
+             cmake --build /temp/taobuild --target install
+
+      - name: build grammar testing
+        run: |
+             cmake -DCMAKE_PREFIX_PATH=/tao -B /temp/grammar peg-idl
+             cmake --build /temp/grammar --config Release
+
+      - name: test grammar
+        run: |
+             ctest --test-dir /temp/grammar --build-config Release -V
