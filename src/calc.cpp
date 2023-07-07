@@ -1,10 +1,12 @@
 // vim: tags+=~/Documents/DHI/PEGTL/taopeg.tags
 
 #include <any>
+#include <array>
 #include <cstdlib>
 #include <iostream>
 #include <list>
 #include <string>
+#include <typeindex>
 
 #include <tao/pegtl/contrib/analyze.hpp>
 
@@ -15,6 +17,58 @@ using namespace std;
 using calc_stack = std::list<std::any>;
 using expr_reg = std::string;
 
+// std::any support basically:
+// + all integers are managed as long long
+// + all floats (fixed included) are managed as long double (in MSVC will be an actual double)
+
+template<typename T> T promote(const std::any& x)
+{
+    if ( typeid(T) == x.type())
+    {
+        return any_cast<T>(x);
+    }
+
+    if ( typeid(long long) == x.type() )
+    {
+        return static_cast<T>(any_cast<long long>(x));
+    }
+    else if ( typeid(long double) == x.type() )
+    {
+        return static_cast<T>(any_cast<long double>(x));
+    }
+    else if ( typeid(bool) == x.type() )
+    {
+        return static_cast<T>(any_cast<bool>(x));
+    }
+
+    throw runtime_error("bad promote");
+}
+
+const std::type_info& promotion_type(const std::any& a, const std::any& b)
+{
+    static std::map<std::type_index, int> priorities = {
+        {typeid(long double), 2},
+        {typeid(long long), 1},
+        {typeid(bool), 0},
+    };
+
+    static std::array<const type_info*,3> infos = {
+        &typeid(bool),
+        &typeid(long long),
+        &typeid(long double)
+    };
+
+    if (a.type() == b.type())
+    {
+        return a.type();
+    }
+    else
+    {
+       return *infos[std::max(priorities.at(a.type()), priorities.at(b.type()))];
+    }
+}
+
+// Actions
 template<typename Rule>
 struct report_action
 {
@@ -41,20 +95,6 @@ struct report_action<Rule> \
     } \
 };
 
-#define op_action(Rule, id, operation) \
-template<> \
-struct report_action<Rule> \
-{ \
-    template<typename Input> \
-    static void apply(const Input& in, expr_reg& m, calc_stack& s) \
-    { \
-        m += (m.empty() ? "" : ";") + std::string{#id}; \
-        cout << "Rule: " << typeid(Rule).name() \
-             << " " << in.string() << endl; \
-        operation ; \
-    } \
-};
-
 template<>
 struct report_action<boolean_literal>
 {
@@ -76,29 +116,222 @@ struct report_action<boolean_literal>
 
         bool res;
         ss >> boolalpha >> res;
-        s.emplace_back(res);
+        s.emplace_front(res);
     }
 };
 
-load_action(dec_literal, decimal, long long res; ss >> res; s.emplace_back(res))
-load_action(oct_literal, octal, long long res; ss >> setbase(ios_base::oct) >> res; s.emplace_back(res))
-load_action(hex_literal, hexa, long long res; ss >> setbase(ios_base::hex) >> res; s.emplace_back(res))
-load_action(float_literal, float, long double res; ss >> res; s.emplace_back(res))
-load_action(fixed_pt_literal, fixed, long double res; ss >> res; s.emplace_back(res); cout << res << endl)
+load_action(dec_literal, decimal,
+    long long res;
+    ss >> res;
+    s.emplace_front(res))
 
-op_action(or_exec, or,)
-op_action(xor_exec, xor,)
-op_action(and_exec, and,)
-op_action(rshift_exec, >>,)
-op_action(lshift_exec, <<,)
-op_action(add_exec, add,)
-op_action(sub_exec, sub,)
-op_action(mult_exec, mult,)
-op_action(div_exec, div,)
-op_action(mod_exec, mod,)
-op_action(minus_exec, minus,)
-op_action(plus_exec, plus,)
-op_action(inv_exec, inv,)
+load_action(oct_literal, octal,
+    long long res;
+    ss >> setbase(ios_base::oct) >> res;
+    s.emplace_front(res))
+
+load_action(hex_literal, hexa,
+    long long res;
+    ss >> setbase(ios_base::hex) >> res;
+    s.emplace_front(res))
+
+load_action(float_literal, float,
+    long double res;
+    ss >> res;
+    s.emplace_front(res))
+
+load_action(fixed_pt_literal, fixed, long double res;
+    ss >> res;
+    s.emplace_front(res);
+    cout << res << endl)
+
+#define float_op_action(Rule, id, operation) \
+template<> \
+struct report_action<Rule> \
+{ \
+    template<typename Input> \
+    static void apply(const Input& in, expr_reg& m, calc_stack& s) \
+    { \
+        cout << "Rule: " << typeid(Rule).name() \
+             << " " << in.string() << endl; \
+ \
+        m += (m.empty() ? "" : ";") + std::string{#id}; \
+ \
+        /* calculate the result */ \
+        auto it = s.begin(); \
+        std::any s1 = *it++, s2 = *it, res; \
+ \
+        const auto& pt = promotion_type(s1, s2); \
+ \
+        if ( typeid(long long) == pt ) \
+        { \
+            res = promote<long long>(s2) operation promote<long long>(s1); \
+        } \
+        else if ( typeid(long double) == pt ) \
+        { \
+            res = promote<long double>(s2) operation promote<long double>(s1); \
+        } \
+        else \
+        { \
+            throw runtime_error("invalid arguments for the operation " #operation ); \
+        } \
+ \
+        /* update the stack */ \
+        s.pop_front(); \
+        s.front() = std::move(res); \
+ \
+    } \
+};
+
+#define int_op_action(Rule, id, operation) \
+template<> \
+struct report_action<Rule> \
+{ \
+    template<typename Input> \
+    static void apply(const Input& in, expr_reg& m, calc_stack& s) \
+    { \
+        cout << "Rule: " << typeid(Rule).name() \
+             << " " << in.string() << endl; \
+ \
+        m += (m.empty() ? "" : ";") + std::string{#id}; \
+ \
+        /* calculate the result */ \
+        auto it = s.begin(); \
+        std::any s1 = *it++, s2 = *it, res; \
+ \
+        const auto& pt = promotion_type(s1, s2); \
+ \
+        if ( typeid(long long) == pt ) \
+        { \
+            res = promote<long long>(s2) operation promote<long long>(s1); \
+        } \
+        else \
+        { \
+            throw runtime_error("invalid arguments for the operation " #operation ); \
+        } \
+ \
+        /* update the stack */ \
+        s.pop_front(); \
+        s.front() = std::move(res); \
+ \
+    } \
+};
+
+#define bool_op_action(Rule, id, operation) \
+template<> \
+struct report_action<Rule> \
+{ \
+    template<typename Input> \
+    static void apply(const Input& in, expr_reg& m, calc_stack& s) \
+    { \
+        cout << "Rule: " << typeid(Rule).name() \
+             << " " << in.string() << endl; \
+ \
+        m += (m.empty() ? "" : ";") + std::string{#id}; \
+ \
+        /* calculate the result */ \
+        auto it = s.begin(); \
+        std::any s1 = *it++, s2 = *it, res; \
+ \
+        const auto& pt = promotion_type(s1, s2); \
+ \
+        if ( typeid(long long) == pt ) \
+        { \
+            res = promote<long long>(s2) operation promote<long long>(s1); \
+        } \
+        else if ( typeid(bool) == pt ) \
+        { \
+            res = promote<bool>(s2) operation promote<bool>(s1); \
+        } \
+        else \
+        { \
+            throw runtime_error("invalid arguments for the operation " #operation ); \
+        } \
+ \
+        /* update the stack */ \
+        s.pop_front(); \
+        s.front() = std::move(res); \
+ \
+    } \
+};
+
+bool_op_action(or_exec, or, |)
+bool_op_action(xor_exec, xor, ^)
+bool_op_action(and_exec, and, &)
+int_op_action(rshift_exec, >>, >>)
+int_op_action(lshift_exec, <<, <<)
+int_op_action(mod_exec, mod, %)
+float_op_action(add_exec, add, +)
+float_op_action(sub_exec, sub, -)
+float_op_action(mult_exec, mult, *)
+float_op_action(div_exec, div, /)
+
+template<>
+struct report_action<minus_exec>
+{
+    template<typename Input>
+    static void apply(const Input& in, expr_reg& m, calc_stack& s)
+    {
+        using namespace std;
+        cout << "Rule: " << typeid(minus_exec).name() << " " << in.string() << endl;
+
+        m += (m.empty() ? "" : ";") + std::string{"minus"};
+
+        if ( typeid(long long) == s.front().type() )
+        {
+            s.front() = -promote<long long>(s.front());
+        }
+        else if ( typeid(long double) == s.front().type() )
+        {
+            s.front() = -promote<long double>(s.front());
+        }
+        else
+        {
+            throw runtime_error("invalid argument for the minus unary operator");
+        }
+    }
+};
+
+template<>
+struct report_action<plus_exec>
+{
+    template<typename Input>
+    static void apply(const Input& in, expr_reg& m, calc_stack& s)
+    {
+        using namespace std;
+        cout << "Rule: " << typeid(plus_exec).name() << " " << in.string() << endl;
+
+        m += (m.empty() ? "" : ";") + std::string{"plus"};
+
+        // noop
+    }
+};
+
+template<>
+struct report_action<inv_exec>
+{
+    template<typename Input>
+    static void apply(const Input& in, expr_reg& m, calc_stack& s)
+    {
+        using namespace std;
+        cout << "Rule: " << typeid(inv_exec).name() << " " << in.string() << endl;
+
+        m += (m.empty() ? "" : ";") + std::string{"inv"};
+
+        if ( typeid(long long) == s.front().type() )
+        {
+            s.front() = ~promote<long long>(s.front());
+        }
+        else if ( typeid(bool) == s.front().type() )
+        {
+            s.front() = !promote<bool>(s.front());
+        }
+        else
+        {
+            throw runtime_error("invalid argument for the inverse unary operator");
+        }
+    }
+};
 
 int main (int argc, char *argv[])
 {
@@ -136,16 +369,24 @@ int main (int argc, char *argv[])
         // compare evaluation result
         if (s.front().type() == typeid(bool))
         {
-            res = any_cast<bool>(s.front()) == (atoi(argv[3]) != 0);
+            bool eval = any_cast<bool>(s.front());
+            cout << "evaluated result: " << eval << endl;
+            res = eval == (atoi(argv[3]) != 0);
         }
         else if (s.front().type() == typeid(long long))
         {
-            res = any_cast<long long>(s.front()) == atoll(argv[3]);
+            long long eval = any_cast<long long>(s.front());
+            cout << "evaluated result: " << eval << endl;
+            res = eval == atoll(argv[3]);
         }
         else if (s.front().type() == typeid(long double))
         {
-            res = any_cast<long double>(s.front()) == atof(argv[3]);
+            long double eval = any_cast<long double>(s.front());
+            cout << "evaluated result: " << eval << endl;
+            res = eval == atof(argv[3]);
         }
+
+        cout << "expected result: " << argv[3] << endl;
 
         ret = res ? 0 : -1;
     }
