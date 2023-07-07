@@ -46,4 +46,4 @@ jobs:
 
       - name: test grammar
         run: |
-             ctest --test-dir /temp/grammar --build-config Release -V
+             ctest --test-dir /temp/grammar --build-config Release --output-on-failure

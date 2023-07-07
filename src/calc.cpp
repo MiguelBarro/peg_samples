@@ -371,19 +371,19 @@ int main (int argc, char *argv[])
         {
             bool eval = any_cast<bool>(s.front());
             cout << "evaluated result: " << eval << endl;
-            res = eval == (atoi(argv[3]) != 0);
+            res &= eval == (atoi(argv[3]) != 0);
         }
         else if (s.front().type() == typeid(long long))
         {
             long long eval = any_cast<long long>(s.front());
             cout << "evaluated result: " << eval << endl;
-            res = eval == atoll(argv[3]);
+            res &= eval == atoll(argv[3]);
         }
         else if (s.front().type() == typeid(long double))
         {
             long double eval = any_cast<long double>(s.front());
             cout << "evaluated result: " << eval << endl;
-            res = eval == atof(argv[3]);
+            res &= eval == atof(argv[3]);
         }
 
         cout << "expected result: " << argv[3] << endl;
